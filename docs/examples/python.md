@@ -22,7 +22,7 @@ import secrets
 import requests
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-API_BASE = "https://api.sharepasswords.com/api/v1"
+API_BASE = "https://api.sharepasswords.com/v1"
 
 
 # ============================================

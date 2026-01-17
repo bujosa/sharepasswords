@@ -1,10 +1,10 @@
 # Security
 
-This document details the security model and encryption implementation of SharePasswords.
+This document details the security model and encryption implementation of SharePassword.
 
 ## Zero-Knowledge Architecture
 
-SharePasswords implements a **zero-knowledge** architecture, meaning the server **never** has access to your plaintext secrets.
+SharePassword implements a **zero-knowledge** architecture, meaning the server **never** has access to your plaintext secrets.
 
 ### How It Works
 

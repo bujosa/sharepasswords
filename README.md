@@ -1,8 +1,8 @@
-# SharePasswords
+# SharePassword
 
 > Secure, zero-knowledge password sharing platform with encrypted one-time links.
 
-SharePasswords enables users to share sensitive information (passwords, API keys, credentials) via encrypted one-time links. The platform uses **client-side encryption**, ensuring the server **never** has access to plaintext content.
+SharePassword enables users to share sensitive information (passwords, API keys, credentials) via encrypted one-time links. The platform uses **client-side encryption**, ensuring the server **never** has access to plaintext content.
 
 ## Key Features
 
@@ -80,11 +80,12 @@ combined.set(new Uint8Array(ciphertext), iv.length);
 const encryptedContent = btoa(String.fromCharCode(...combined));
 
 // 4. Send to API
-const response = await fetch('https://api.sharepasswords.com/api/v1/secrets', {
+const secretId = crypto.randomUUID();
+const response = await fetch('https://api.sharepasswords.com/v1/secrets', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    secretId: crypto.randomUUID(),
+    secretId,
     encryptedContent,
     expiresIn: '24h',
     maxViews: 1
@@ -100,7 +101,7 @@ const shareUrl = `https://sharepasswords.com/s/${secretId}#${keyBase64}`;
 ### Retrieve a Secret (cURL)
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/secrets/{secretId}
+curl https://api.sharepasswords.com/v1/secrets/{secretId}
 ```
 
 ## Community
@@ -121,4 +122,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 | Database | MongoDB |
 | Frontend | Svelte 5 |
 | Encryption | Web Crypto API (AES-256-GCM) |
-

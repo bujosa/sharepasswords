@@ -12,7 +12,7 @@ Complete examples for using SharePasswords API with JavaScript (Browser and Node
  * Zero-knowledge password sharing
  */
 
-const API_BASE = 'https://api.sharepasswords.com/api/v1';
+const API_BASE = 'https://api.sharepasswords.com/v1';
 
 // ============================================
 // CRYPTO UTILITIES
@@ -268,7 +268,7 @@ For Node.js, you'll need the `node:crypto` module:
 ```javascript
 import crypto from 'node:crypto';
 
-const API_BASE = 'https://api.sharepasswords.com/api/v1';
+const API_BASE = 'https://api.sharepasswords.com/v1';
 
 /**
  * Encrypt using Node.js crypto
@@ -423,12 +423,10 @@ interface GetSecretResult {
 }
 
 interface ApiResponse<T> {
-  success: boolean;
+  status: 'ok' | 'failed';
   data?: T;
-  error?: {
-    message: string;
-    code: string;
-  };
+  code?: string;
+  message?: string;
 }
 ```
 

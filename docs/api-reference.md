@@ -1,12 +1,12 @@
 # API Reference
 
-Complete REST API documentation for SharePasswords.
+Complete REST API documentation for SharePassword.
 
 ## Base URL
 
 ```
-Production: https://api.sharepasswords.com/api/v1
-Development: http://localhost:3000/api/v1
+Production: https://api.sharepasswords.com/v1
+Development: http://localhost:3000/v1
 ```
 
 ## Authentication
@@ -21,7 +21,7 @@ All responses follow a consistent format:
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": { ... }
 }
 ```
@@ -30,17 +30,15 @@ All responses follow a consistent format:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Human-readable error message",
-    "code": "ERROR_CODE",
-    "details": [
-      {
-        "field": "fieldName",
-        "detail": "Specific validation error"
-      }
-    ]
-  }
+  "status": "failed",
+  "code": "ERROR_CODE",
+  "message": "Human-readable error message",
+  "errors": [
+    {
+      "field": "fieldName",
+      "detail": "Specific validation error"
+    }
+  ]
 }
 ```
 
@@ -66,7 +64,7 @@ POST /secrets
 #### Example Request
 
 ```bash
-curl -X POST https://api.sharepasswords.com/api/v1/secrets \
+curl -X POST https://api.sharepasswords.com/v1/secrets \
   -H "Content-Type: application/json" \
   -d '{
     "secretId": "a1b2c3d4",
@@ -76,14 +74,14 @@ curl -X POST https://api.sharepasswords.com/api/v1/secrets \
   }'
 ```
 
-#### Success Response (200)
+#### Success Response (201)
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "secretId": "a1b2c3d4",
-    "expiresAt": "2024-01-16T12:00:00.000Z"
+    "expiresAt": "2026-01-17T12:00:00.000Z"
   }
 }
 ```
@@ -94,17 +92,15 @@ curl -X POST https://api.sharepasswords.com/api/v1/secrets \
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Validation failed",
-    "code": "VALIDATION_ERROR",
-    "details": [
-      {
-        "field": "encryptedContent",
-        "detail": "Required"
-      }
-    ]
-  }
+  "status": "failed",
+  "code": "VALIDATION_ERROR",
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "encryptedContent",
+      "detail": "Required"
+    }
+  ]
 }
 ```
 
@@ -112,11 +108,9 @@ curl -X POST https://api.sharepasswords.com/api/v1/secrets \
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Secret with this ID already exists",
-    "code": "CONFLICT"
-  }
+  "status": "failed",
+  "code": "CONFLICT",
+  "message": "Secret with this ID already exists"
 }
 ```
 
@@ -139,14 +133,14 @@ GET /secrets/:secretId
 #### Example Request
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/secrets/a1b2c3d4
+curl https://api.sharepasswords.com/v1/secrets/a1b2c3d4
 ```
 
 #### Success Response (200)
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "encryptedContent": "dGVzdCBlbmNyeXB0ZWQgY29udGVudA==",
     "remainingViews": 0
@@ -162,11 +156,9 @@ curl -X GET https://api.sharepasswords.com/api/v1/secrets/a1b2c3d4
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Secret not found or expired",
-    "code": "NOT_FOUND"
-  }
+  "status": "failed",
+  "code": "NOT_FOUND",
+  "message": "Secret not found or expired"
 }
 ```
 
@@ -189,14 +181,14 @@ GET /secrets/:secretId/exists
 #### Example Request
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/secrets/a1b2c3d4/exists
+curl https://api.sharepasswords.com/v1/secrets/a1b2c3d4/exists
 ```
 
 #### Success Response (200)
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "exists": true
   }
@@ -216,7 +208,7 @@ GET /health
 #### Example Request
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/health
+curl https://api.sharepasswords.com/health
 ```
 
 #### Success Response (200)
@@ -286,6 +278,7 @@ Either a positive integer or `null`:
 | `VALIDATION_ERROR` | 400 | Request body failed validation |
 | `NOT_FOUND` | 404 | Secret not found or expired |
 | `CONFLICT` | 409 | Secret ID already exists |
+| `RATE_LIMITED` | 429 | Too many requests |
 | `INTERNAL_ERROR` | 500 | Unexpected server error |
 
 ---
@@ -303,11 +296,9 @@ When rate limited, you'll receive:
 
 ```json
 {
-  "success": false,
-  "error": {
-    "message": "Rate limit exceeded",
-    "code": "RATE_LIMITED"
-  }
+  "status": "failed",
+  "code": "RATE_LIMITED",
+  "message": "Rate limit exceeded"
 }
 ```
 
@@ -346,7 +337,8 @@ Always use HTTPS in production to protect the encrypted content in transit.
 Use the `/exists` endpoint before showing the "Reveal" button to provide a better user experience:
 
 ```javascript
-const { data } = await api.checkSecretExists(secretId);
+const response = await fetch(`https://api.sharepasswords.com/v1/secrets/${secretId}/exists`);
+const { data } = await response.json();
 if (!data.exists) {
   showError('This secret has expired or been viewed already');
 }
@@ -358,12 +350,17 @@ Secrets can expire at any time. Always handle 404 errors:
 
 ```javascript
 try {
-  const secret = await api.getSecret(secretId);
+  const response = await fetch(`https://api.sharepasswords.com/v1/secrets/${secretId}`);
+  if (!response.ok) {
+    if (response.status === 404) {
+      showError('This secret has expired or been viewed already');
+      return;
+    }
+  }
+  const { data } = await response.json();
   // Decrypt and display
 } catch (error) {
-  if (error.code === 'NOT_FOUND') {
-    showError('This secret has expired or been viewed already');
-  }
+  showError('Failed to retrieve secret');
 }
 ```
 

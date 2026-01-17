@@ -9,7 +9,7 @@ Command-line examples using cURL for the SharePasswords API.
 ### Create a Secret
 
 ```bash
-curl -X POST https://api.sharepasswords.com/api/v1/secrets \
+curl -X POST https://api.sharepasswords.com/v1/secrets \
   -H "Content-Type: application/json" \
   -d '{
     "secretId": "abc12345",
@@ -23,10 +23,10 @@ curl -X POST https://api.sharepasswords.com/api/v1/secrets \
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "secretId": "abc12345",
-    "expiresAt": "2024-01-17T12:00:00.000Z"
+    "expiresAt": "2026-01-17T12:00:00.000Z"
   }
 }
 ```
@@ -34,14 +34,14 @@ curl -X POST https://api.sharepasswords.com/api/v1/secrets \
 ### Get a Secret
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/secrets/abc12345
+curl https://api.sharepasswords.com/v1/secrets/abc12345
 ```
 
 **Response:**
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "encryptedContent": "BASE64_ENCRYPTED_CONTENT",
     "remainingViews": 0
@@ -52,14 +52,14 @@ curl -X GET https://api.sharepasswords.com/api/v1/secrets/abc12345
 ### Check if Secret Exists
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/secrets/abc12345/exists
+curl https://api.sharepasswords.com/v1/secrets/abc12345/exists
 ```
 
 **Response:**
 
 ```json
 {
-  "success": true,
+  "status": "ok",
   "data": {
     "exists": true
   }
@@ -69,7 +69,7 @@ curl -X GET https://api.sharepasswords.com/api/v1/secrets/abc12345/exists
 ### Health Check
 
 ```bash
-curl -X GET https://api.sharepasswords.com/api/v1/health
+curl -X GET https://api.sharepasswords.com/v1/health
 ```
 
 **Response:**
@@ -116,7 +116,7 @@ echo "Encrypted: $ENCRYPTED"
 ```bash
 SECRET_ID=$(openssl rand -hex 4)
 
-curl -X POST https://api.sharepasswords.com/api/v1/secrets \
+curl -X POST https://api.sharepasswords.com/v1/secrets \
   -H "Content-Type: application/json" \
   -d "{
     \"secretId\": \"$SECRET_ID\",
@@ -132,7 +132,7 @@ echo "Share URL: https://sharepasswords.com/s/$SECRET_ID#$KEY"
 
 ```bash
 # Fetch the encrypted content
-RESPONSE=$(curl -s https://api.sharepasswords.com/api/v1/secrets/$SECRET_ID)
+RESPONSE=$(curl -s https://api.sharepasswords.com/v1/secrets/$SECRET_ID)
 ENCRYPTED_CONTENT=$(echo $RESPONSE | jq -r '.data.encryptedContent')
 
 # Decrypt (using the same key)
@@ -152,7 +152,7 @@ Here's a complete bash script wrapper:
 #   ./sharepasswords.sh get <secret_id>
 #   ./sharepasswords.sh exists <secret_id>
 
-API_BASE="https://api.sharepasswords.com/api/v1"
+API_BASE="https://api.sharepasswords.com/v1"
 
 case "$1" in
   create)

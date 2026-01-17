@@ -1,10 +1,10 @@
 # Architecture
 
-This document describes the system architecture of SharePasswords.
+This document describes the system architecture of SharePassword.
 
 ## Overview
 
-SharePasswords is a monorepo containing multiple packages that work together to provide a secure password sharing platform.
+SharePassword is a monorepo containing multiple packages that work together to provide a secure password sharing platform.
 
 ```
 sharepasswords/
