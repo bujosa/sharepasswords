@@ -122,6 +122,3 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 | Frontend | Svelte 5 |
 | Encryption | Web Crypto API (AES-256-GCM) |
 
-## License
-
-MIT License - see [LICENSE](LICENSE) for details.
