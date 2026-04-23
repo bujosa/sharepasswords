@@ -11,7 +11,11 @@ Development: http://localhost:3000/v1
 
 ## Authentication
 
-The API is **public** and does not require authentication. Rate limiting may be applied to prevent abuse.
+One-time secret endpoints are public and do not require authentication. Vault and invite management endpoints require a bearer token returned by `/auth/login` or `/auth/register`.
+
+```http
+Authorization: Bearer <token>
+```
 
 ## Response Format
 
@@ -218,6 +222,82 @@ curl https://api.sharepasswords.com/health
   "status": "ok"
 }
 ```
+
+---
+
+## Auth Endpoints
+
+### Register
+
+```
+POST /auth/register
+```
+
+Creates a user, an organization, an admin membership, and a personal vault.
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `email` | string | Yes | User email |
+| `name` | string | Yes | User display name |
+| `password` | string | Yes | Minimum 12 characters |
+| `organizationName` | string | No | Organization name |
+
+### Login
+
+```
+POST /auth/login
+```
+
+Returns an auth token and active memberships.
+
+### Current User
+
+```
+GET /auth/me
+```
+
+Requires bearer auth.
+
+### Invites
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/auth/invites` | Create an organization invite |
+| GET | `/auth/invites/:token` | Preview an invite |
+| POST | `/auth/invites/:token/accept` | Accept an invite |
+
+Admins can create invite links for `admin` or `user` roles.
+
+---
+
+## Vault Endpoints
+
+Vault routes require bearer auth. Access is scoped by active organization membership.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/vaults` | List accessible vaults |
+| GET | `/vaults/:vaultId/items` | List vault items |
+| POST | `/vaults/:vaultId/items` | Create encrypted vault item |
+| GET | `/vaults/:vaultId/items/:itemId/versions` | List item versions |
+| POST | `/vaults/:vaultId/items/:itemId/versions` | Create a new encrypted version |
+
+### Create Vault Item
+
+```json
+{
+  "type": "file",
+  "encryptedName": "base64-url-safe-ciphertext",
+  "encryptedPayload": "base64-url-safe-ciphertext",
+  "encryptedSizeBytes": 58212
+}
+```
+
+Current limits:
+
+- Raw file upload limit in UI: `40KB`
+- Encrypted payload API limit: `96KB`
+- Encrypted file payloads are stored in private GCS
 
 ---
 

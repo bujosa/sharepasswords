@@ -6,6 +6,11 @@ This document details the security model and encryption implementation of ShareP
 
 SharePassword implements a **zero-knowledge** architecture, meaning the server **never** has access to your plaintext secrets.
 
+This applies in two modes:
+
+- **One-time links**: the encryption key lives in the URL fragment and is never sent to the server.
+- **Vault items**: notes and files are encrypted in the browser before upload; the backend stores ciphertext, metadata, permissions, versions, and private storage paths.
+
 ### How It Works
 
 ```
@@ -124,6 +129,50 @@ const keyBytes = await crypto.subtle.exportKey('raw', key);
 const keyBase64 = btoa(String.fromCharCode(...new Uint8Array(keyBytes)));
 ```
 
+## Vault Security Model
+
+The team vault adds accounts, organizations, invites, roles, file uploads, and version history while keeping sensitive contents encrypted before they leave the browser.
+
+### Vault Data Flow
+
+```
+Browser
+  ├─ Loads a local vault key
+  ├─ Encrypts note/file payload using AES-GCM
+  └─ Sends ciphertext to API
+
+API
+  ├─ Authenticates the user
+  ├─ Verifies organization membership
+  ├─ Stores metadata and version records in MongoDB
+  └─ Writes encrypted file payloads to private GCS
+
+Storage
+  ├─ MongoDB: users, orgs, memberships, invites, encrypted names, version metadata
+  └─ GCS: encrypted file payloads only
+```
+
+### Vault Access Control
+
+| Control | Description |
+|---------|-------------|
+| Organization membership | Vault access is scoped by organization membership |
+| Roles | Organization admins can create invite links and choose `admin` or `user` |
+| Auth token | Authenticated vault routes require a bearer token |
+| Private bucket | GCS bucket uses uniform bucket-level access and public access prevention |
+| Version history | Updates create new encrypted versions instead of overwriting history |
+
+### Current Device Model
+
+The first vault release uses a browser-managed vault key. This keeps plaintext away from the server, but it means vault unlock is tied to the browser/device holding that key.
+
+Planned hardening:
+
+- Mandatory MFA for account access
+- Approved-device key transfer
+- Recovery-key based vault unlock
+- Stronger account recovery flow
+
 ## Threat Model
 
 ### What We Protect Against
@@ -160,8 +209,10 @@ const keyBase64 = btoa(String.fromCharCode(...new Uint8Array(keyBytes)));
 |------|--------|----------|
 | Encrypted content | Yes | Until expiration or max views |
 | Encryption key | **No** | Never touches our servers |
+| Encrypted vault files | Yes | Until removed from the vault |
+| Vault metadata | Yes | Required for org access and version history |
 | IP addresses | No | Not logged |
-| User accounts | N/A | No accounts required |
+| User accounts | Optional | Required only for the vault |
 | Analytics | Minimal | Aggregate only, no PII |
 
 ### Automatic Deletion

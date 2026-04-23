@@ -1,8 +1,10 @@
 # SharePassword
 
-> Secure, zero-knowledge password sharing platform with encrypted one-time links.
+> Secure, zero-knowledge password sharing platform with encrypted one-time links and organization vaults.
 
 SharePassword enables users to share sensitive information (passwords, API keys, credentials) via encrypted one-time links. The platform uses **client-side encryption**, ensuring the server **never** has access to plaintext content.
+
+SharePassword also includes an early encrypted team vault: users can create an account, get an organization automatically, invite teammates, and store encrypted notes or small files with version history.
 
 ## Key Features
 
@@ -13,6 +15,12 @@ SharePassword enables users to share sensitive information (passwords, API keys,
 - **View Limits** - Set maximum number of views (1, 5, 10, or unlimited)
 - **No Account Required** - Anonymous secret sharing
 - **QR Code Generation** - Easy mobile sharing
+- **Accounts & Organizations** - Users get an organization and admin membership on registration
+- **Encrypted Team Vault** - Store encrypted notes and files in an organization vault
+- **Invite Links** - Organization admins can invite admins or normal users
+- **Version History** - Vault item updates create new encrypted versions
+- **Private File Storage** - Encrypted file payloads are stored in Google Cloud Storage, while MongoDB stores metadata
+- **Backoffice Dashboard** - Dedicated admin UI for stats, users, waitlist, organizations, registration gates, and maintenance mode
 
 ## How It Works
 
@@ -42,6 +50,34 @@ SharePassword enables users to share sensitive information (passwords, API keys,
 ```
 
 The encryption key is stored in the URL fragment (`#`), which is **never sent to the server** - providing true zero-knowledge architecture.
+
+## Vault Security Model
+
+The vault keeps the same core principle as one-time links: plaintext should not be sent to the backend.
+
+```
+Browser
+  ├─ Loads a local vault key
+  ├─ Encrypts note or file payload with AES-GCM
+  └─ Sends ciphertext to API
+
+API / MongoDB
+  ├─ Stores users, organizations, memberships, invites
+  ├─ Stores vault item metadata and encrypted names
+  ├─ Stores version records
+  └─ Stores GCS object paths for encrypted files
+
+Google Cloud Storage
+  └─ Stores encrypted file payloads only
+```
+
+Current vault file limits:
+
+- Raw file upload limit: `40KB`
+- Encrypted payload API limit: `96KB`
+- Storage path format: `vaults/{organizationId}/{vaultId}/{itemId}/versions/{versionId}.bin`
+
+Important security note: the first vault release uses a browser-managed vault key. This keeps plaintext away from the server, but approved-device key transfer, mandatory MFA, and recovery-key based vault unlock are planned hardening layers before positioning the vault as a complete 1Password-style replacement.
 
 ## Documentation
 
@@ -121,4 +157,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 | Backend | NestJS 11 (Node.js) |
 | Database | MongoDB |
 | Frontend | Svelte 5 |
+| Backoffice | Svelte 5 + Cloud Run |
 | Encryption | Web Crypto API (AES-256-GCM) |
+| File Storage | Google Cloud Storage |

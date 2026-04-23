@@ -11,6 +11,7 @@ sharepasswords/
 ├── packages/
 │   ├── backend/         # NestJS API server
 │   ├── frontend/        # Svelte 5 SPA
+│   ├── backoffice/      # Svelte admin dashboard
 │   ├── core/            # Shared domain logic
 │   ├── types/           # Shared TypeScript types
 │   └── config/          # ESLint & TSConfig
@@ -25,6 +26,7 @@ sharepasswords/
 | **Frontend** | Svelte 5 + Vite | Reactive UI with client-side encryption |
 | **Backend** | NestJS 11 | REST API with modular architecture |
 | **Database** | MongoDB | Document storage with TTL indexes |
+| **Object Storage** | Google Cloud Storage | Private encrypted vault file payloads |
 | **Encryption** | Web Crypto API | AES-256-GCM encryption |
 | **Build** | pnpm workspaces | Monorepo package management |
 
@@ -92,6 +94,12 @@ backend/src/
 ├── modules/
 │   ├── app.module.ts          # Root module
 │   ├── health/                # Health check module
+│   ├── auth/                  # Register, login, invites
+│   ├── organization/          # Organization and invite schemas
+│   ├── user/                  # Users and memberships
+│   ├── vault/                 # Vaults, items, versions, storage service
+│   ├── settings/              # Public registration, waitlist, maintenance gates
+│   ├── backoffice/            # Admin dashboard data endpoints
 │   │   └── api/
 │   │       └── health.controller.ts
 │   └── secret/                # Core feature module
@@ -143,6 +151,8 @@ frontend/src/
     ├── Header.svelte          # Navigation
     ├── CreateSecret.svelte    # Secret creation UI
     ├── ViewSecret.svelte      # Secret viewing UI
+    ├── VaultPage.svelte       # Login, vault, invites, versions
+    ├── InvitePage.svelte      # Organization invite acceptance
     ├── DocsPage.svelte        # Documentation
     ├── ApiPage.svelte         # API reference
     └── SecurityPage.svelte    # Security info
@@ -157,6 +167,8 @@ frontend/src/
 | `/docs` | DocsPage | Documentation |
 | `/api` | ApiPage | API reference |
 | `/security` | SecurityPage | Security information |
+| `/vault` | VaultPage | Login, register, vault items, invites |
+| `/invite/:inviteToken` | InvitePage | Preview and accept organization invite |
 | `/privacy` | PrivacyPage | Privacy policy |
 | `/terms` | TermsPage | Terms of service |
 
@@ -175,6 +187,68 @@ frontend/src/
   createdAt: Date,            // Creation timestamp
   updatedAt: Date             // Last update timestamp
 }
+```
+
+### Vault Collections
+
+```javascript
+users: {
+  userId,
+  email,
+  name,
+  globalRole,
+  status,
+  passwordHash,
+  passwordSalt,
+  authKdfSalt,
+  recoveryKeyPrefix,
+  mfaEnabled
+}
+
+organizations: {
+  organizationId,
+  name,
+  slug,
+  status,
+  plan,
+  createdByUserId
+}
+
+memberships: {
+  membershipId,
+  userId,
+  organizationId,
+  role,      // admin | user
+  status
+}
+
+vault_items: {
+  itemId,
+  vaultId,
+  organizationId,
+  type,      // secret | file
+  encryptedName,
+  encryptedPayload,
+  storageObjectPath,
+  currentVersion
+}
+
+vault_item_versions: {
+  versionId,
+  itemId,
+  vaultId,
+  organizationId,
+  versionNumber,
+  encryptedName,
+  encryptedPayload,
+  storageObjectPath
+}
+```
+
+Encrypted file payloads are stored in a private GCS bucket using:
+
+```
+vaults/{organizationId}/{vaultId}/{itemId}/versions/{versionId}.bin
 ```
 
 ### Indexes
